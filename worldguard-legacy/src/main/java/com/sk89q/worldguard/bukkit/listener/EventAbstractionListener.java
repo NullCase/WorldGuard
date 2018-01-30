@@ -788,7 +788,7 @@ public class EventAbstractionListener extends AbstractListener {
         }
     }
 
-    @EventHandler(ignoreCancelled = true)
+    //@EventHandler(ignoreCancelled = true)
     public void onInventoryMoveItem(InventoryMoveItemEvent event) {
         final InventoryHolder causeHolder = event.getInitiator().getHolder();
         InventoryHolder sourceHolder = event.getSource().getHolder();

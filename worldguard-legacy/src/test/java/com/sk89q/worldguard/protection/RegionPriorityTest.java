@@ -19,15 +19,17 @@
 
 package com.sk89q.worldguard.protection;
 
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.BlockVector2D;
-import com.sk89q.worldedit.Vector;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import com.sk89q.worldedit.math.BlockVector2;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldguard.TestPlayer;
+import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.domains.DefaultDomain;
-import com.sk89q.worldguard.protection.flags.DefaultFlag;
+import com.sk89q.worldguard.protection.flags.Flags;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
-import com.sk89q.worldguard.protection.flags.registry.SimpleFlagRegistry;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.GlobalProtectedRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
@@ -38,9 +40,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public abstract class RegionPriorityTest {
     static String COURTYARD_ID = "courtyard";
     static String FOUNTAIN_ID = "fountain";
@@ -48,9 +47,9 @@ public abstract class RegionPriorityTest {
     static String MEMBER_GROUP = "member";
     static String COURTYARD_GROUP = "courtyard";
 
-    Vector inFountain = new Vector(2, 2, 2);
-    Vector inCourtyard = new Vector(7, 7, 7);
-    Vector outside = new Vector(15, 15, 15);
+    BlockVector3 inFountain = BlockVector3.at(2, 2, 2);
+    BlockVector3 inCourtyard = BlockVector3.at(7, 7, 7);
+    BlockVector3 outside = BlockVector3.at(15, 15, 15);
     RegionManager manager;
     ProtectedRegion globalRegion;
     ProtectedRegion courtyard;
@@ -59,9 +58,7 @@ public abstract class RegionPriorityTest {
     TestPlayer player2;
 
     protected FlagRegistry getFlagRegistry() {
-        FlagRegistry registry = new SimpleFlagRegistry();
-        registry.registerAll(DefaultFlag.getDefaultFlags());
-        return registry;
+        return WorldGuard.getInstance().getFlagRegistry();
     }
     
     protected abstract RegionManager createRegionManager() throws Exception;
@@ -94,11 +91,11 @@ public abstract class RegionPriorityTest {
         DefaultDomain domain = new DefaultDomain();
         domain.addGroup(COURTYARD_GROUP);
         
-        ArrayList<BlockVector2D> points = new ArrayList<BlockVector2D>();
-        points.add(new BlockVector2D(0, 0));
-        points.add(new BlockVector2D(10, 0));
-        points.add(new BlockVector2D(10, 10));
-        points.add(new BlockVector2D(0, 10));
+        ArrayList<BlockVector2> points = new ArrayList<>();
+        points.add(BlockVector2.ZERO);
+        points.add(BlockVector2.at(10, 0));
+        points.add(BlockVector2.at(10, 10));
+        points.add(BlockVector2.at(0, 10));
         
         //ProtectedRegion region = new ProtectedCuboidRegion(COURTYARD_ID, new BlockVector(0, 0, 0), new BlockVector(10, 10, 10));
         ProtectedRegion region = new ProtectedPolygonalRegion(COURTYARD_ID, points, 0, 10);
@@ -107,7 +104,7 @@ public abstract class RegionPriorityTest {
         manager.addRegion(region);
         
         courtyard = region;
-        courtyard.setFlag(DefaultFlag.MOB_SPAWNING, StateFlag.State.DENY);
+        courtyard.setFlag(Flags.MOB_SPAWNING, StateFlag.State.DENY);
     }
     
     void setUpFountainRegion() throws Exception {
@@ -115,14 +112,14 @@ public abstract class RegionPriorityTest {
         domain.addGroup(MEMBER_GROUP);
         
         ProtectedRegion region = new ProtectedCuboidRegion(FOUNTAIN_ID,
-                new BlockVector(0, 0, 0), new BlockVector(5, 5, 5));
+                BlockVector3.ZERO, BlockVector3.at(5, 5, 5));
         region.setMembers(domain);
         manager.addRegion(region);
 
         fountain = region;
         fountain.setParent(courtyard);
-        fountain.setFlag(DefaultFlag.FIRE_SPREAD, StateFlag.State.DENY);
-        fountain.setFlag(DefaultFlag.MOB_SPAWNING, StateFlag.State.ALLOW);
+        fountain.setFlag(Flags.FIRE_SPREAD, StateFlag.State.DENY);
+        fountain.setFlag(Flags.MOB_SPAWNING, StateFlag.State.ALLOW);
     }
     
     @Test
@@ -133,11 +130,11 @@ public abstract class RegionPriorityTest {
         fountain.setPriority(0);
         
         appl = manager.getApplicableRegions(inCourtyard);
-        assertTrue(appl.allows(DefaultFlag.FIRE_SPREAD));
-        assertFalse(appl.allows(DefaultFlag.MOB_SPAWNING));
+        assertTrue(appl.testState(null, Flags.FIRE_SPREAD));
+        assertFalse(appl.testState(null, Flags.MOB_SPAWNING));
         appl = manager.getApplicableRegions(inFountain);
-        assertFalse(appl.allows(DefaultFlag.FIRE_SPREAD));
-        assertTrue(appl.allows(DefaultFlag.MOB_SPAWNING));
+        assertFalse(appl.testState(null, Flags.FIRE_SPREAD));
+        assertTrue(appl.testState(null, Flags.MOB_SPAWNING));
     }
     
     @Test
@@ -148,9 +145,9 @@ public abstract class RegionPriorityTest {
         fountain.setPriority(0);
         
         appl = manager.getApplicableRegions(inCourtyard);
-        assertTrue(appl.allows(DefaultFlag.FIRE_SPREAD));
+        assertTrue(appl.testState(null, Flags.FIRE_SPREAD));
         appl = manager.getApplicableRegions(inFountain);
-        assertFalse(appl.allows(DefaultFlag.FIRE_SPREAD));
+        assertFalse(appl.testState(null, Flags.FIRE_SPREAD));
     }
     
     @Test
@@ -161,8 +158,8 @@ public abstract class RegionPriorityTest {
         fountain.setPriority(5);
         
         appl = manager.getApplicableRegions(inCourtyard);
-        assertFalse(appl.allows(DefaultFlag.MOB_SPAWNING));
+        assertFalse(appl.testState(null, Flags.MOB_SPAWNING));
         appl = manager.getApplicableRegions(inFountain);
-        assertTrue(appl.allows(DefaultFlag.MOB_SPAWNING));
+        assertTrue(appl.testState(null, Flags.MOB_SPAWNING));
     }
 }

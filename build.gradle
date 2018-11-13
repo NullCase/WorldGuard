@@ -26,10 +26,15 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.1'
-        classpath 'org.jfrog.buildinfo:build-info-extractor-gradle:3.0.1'
-        classpath 'org.ajoberstar:gradle-git:0.12.0'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+        classpath 'org.jfrog.buildinfo:build-info-extractor-gradle:4.7.5'
+        classpath 'org.ajoberstar:gradle-git:1.7.2'
     }
+}
+
+allprojects {
+    group = 'com.sk89q.worldguard'
+    version = '7.0.0-SNAPSHOT'
 }
 
 if (!project.hasProperty("artifactory_contextUrl")) ext.artifactory_contextUrl = "http://localhost"
@@ -45,23 +50,47 @@ if (!project.hasProperty("gitCommitHash")) {
     }
 }
 
+apply plugin: 'com.jfrog.artifactory'
+artifactory {
+    contextUrl = "${artifactory_contextUrl}"
+    publish {
+        repository {
+            repoKey = project.version.contains("SNAPSHOT") ? 'libs-snapshot-local' : 'libs-release-local'
+            username = "${artifactory_user}"
+            password = "${artifactory_password}"
+            maven = true
+
+        }
+    }
+
+    resolve {
+        repository {
+            repoKey = 'repo'
+            username = "${artifactory_user}"
+            password = "${artifactory_password}"
+            maven = true
+        }
+    }
+}
+artifactoryPublish.skip = true
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'maven'
-    apply plugin: 'checkstyle'
+//    apply plugin: 'checkstyle' TODO Fix
     apply plugin: 'com.github.johnrengelman.shadow'
-    apply plugin: 'com.jfrog.artifactory-upload'
+    apply plugin: 'com.jfrog.artifactory'
 
-    group = 'com.sk89q.worldguard'
-    version = '7.0.0-SNAPSHOT'
     ext.internalVersion = version + ";" + gitCommitHash
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 
-    checkstyle.configFile = new File(rootProject.projectDir, "config/checkstyle/checkstyle.xml")
+//    checkstyle.configFile = new File(rootProject.projectDir, "config/checkstyle/checkstyle.xml")
+//    checkstyle.toolVersion = '7.6.1'
 
     repositories {
+        mavenLocal()
         mavenCentral()
         maven { url "http://repo.spongepowered.org/maven/" }
         maven { url "https://hub.spigotmc.org/nexus/content/groups/public" }
@@ -92,8 +121,8 @@ subprojects {
         archives javadocJar
     }
 
-    build.dependsOn(checkstyleMain)
-    build.dependsOn(checkstyleTest)
+//    build.dependsOn(checkstyleMain)
+//    build.dependsOn(checkstyleTest)
     build.dependsOn(sourcesJar)
     build.dependsOn(javadocJar)
 
@@ -101,31 +130,17 @@ subprojects {
         classifier 'dist'
         dependencies {
             include(dependency('org.khelekore:prtree:1.5.0'))
+            include(dependency('com.sk89q:squirrelid:0.1.0'))
+            include(dependency('org.flywaydb:flyway-core:3.0'))
+            include(dependency('com.googlecode.json-simple:json-simple:1.1.1'))
+            include(dependency('net.sf.opencsv:opencsv:2.0'))
         }
         exclude 'GradleStart**'
         exclude '.cache'
         exclude 'LICENSE*'
     }
 
-    artifactory {
-        contextUrl = "${artifactory_contextUrl}"
-        publish {
-            repository {
-                repoKey = project.version.contains("SNAPSHOT") ? 'libs-snapshot-local' : 'libs-release-local'
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-                maven = true
-                
-            }
-        }
-
-        resolve {
-            repository {
-                repoKey = 'repo'
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-                maven = true
-            }
-        }
+    artifactoryPublish {
+        publishConfigs('archives')
     }
 }

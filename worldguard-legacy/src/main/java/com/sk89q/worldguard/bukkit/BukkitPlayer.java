@@ -19,21 +19,17 @@
 
 package com.sk89q.worldguard.bukkit;
 
-import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+import com.sk89q.worldedit.world.weather.WeatherType;
+import com.sk89q.worldedit.world.weather.WeatherTypes;
 import com.sk89q.worldguard.LocalPlayer;
 import org.bukkit.BanList.Type;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-import java.util.UUID;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-
-public class BukkitPlayer extends LocalPlayer {
+public class BukkitPlayer extends com.sk89q.worldedit.bukkit.BukkitPlayer implements LocalPlayer {
 
     private final WorldGuardPlugin plugin;
-    private final Player player;
     private final String name;
     private final boolean silenced;
 
@@ -42,13 +38,10 @@ public class BukkitPlayer extends LocalPlayer {
     }
 
     BukkitPlayer(WorldGuardPlugin plugin, Player player, boolean silenced) {
-        checkNotNull(plugin);
-        checkNotNull(player);
-
+        super((WorldEditPlugin) Bukkit.getPluginManager().getPlugin("WorldEdit"), player);
         this.plugin = plugin;
-        this.player = player;
         // getName() takes longer than before in newer versions of Minecraft
-        this.name = player.getName();
+        this.name = player == null ? null : player.getName();
         this.silenced = silenced;
     }
 
@@ -58,55 +51,109 @@ public class BukkitPlayer extends LocalPlayer {
     }
 
     @Override
-    public UUID getUniqueId() {
-        return player.getUniqueId();
-    }
-
-    @Override
     public boolean hasGroup(String group) {
-        return plugin.inGroup(player, group);
-    }
-
-    @Override
-    public Vector getPosition() {
-        Location loc = player.getLocation();
-        return new Vector(loc.getX(), loc.getY(), loc.getZ());
+        return plugin.inGroup(getPlayer(), group);
     }
 
     @Override
     public void kick(String msg) {
         if (!silenced) {
-            player.kickPlayer(msg);
+            getPlayer().kickPlayer(msg);
         }
     }
 
     @Override
     public void ban(String msg) {
         if (!silenced) {
-            Bukkit.getBanList(Type.NAME).addBan(player.getName(), null, null, null);
-            player.kickPlayer(msg);
+            Bukkit.getBanList(Type.NAME).addBan(getName(), null, null, null);
+            getPlayer().kickPlayer(msg);
         }
     }
 
     @Override
+    public double getHealth() {
+        return getPlayer().getHealth();
+    }
+
+    @Override
+    public void setHealth(double health) {
+        getPlayer().setHealth(health);
+    }
+
+    @Override
+    public double getMaxHealth() {
+        return getPlayer().getMaxHealth();
+    }
+
+    @Override
+    public double getFoodLevel() {
+        return getPlayer().getFoodLevel();
+    }
+
+    @Override
+    public void setFoodLevel(double foodLevel) {
+        getPlayer().setFoodLevel((int) foodLevel);
+    }
+
+    @Override
+    public double getSaturation() {
+        return getPlayer().getSaturation();
+    }
+
+    @Override
+    public void setSaturation(double saturation) {
+        getPlayer().setSaturation((float) saturation);
+    }
+
+    @Override
+    public WeatherType getPlayerWeather() {
+        return null;
+    }
+
+    @Override
+    public void setPlayerWeather(WeatherType weather) {
+        getPlayer().setPlayerWeather(weather == WeatherTypes.CLEAR ? org.bukkit.WeatherType.CLEAR : org.bukkit.WeatherType.DOWNFALL);
+    }
+
+    @Override
+    public void resetPlayerWeather() {
+        getPlayer().resetPlayerWeather();
+    }
+
+    @Override
+    public boolean isPlayerTimeRelative() {
+        return getPlayer().isPlayerTimeRelative();
+    }
+
+    @Override
+    public long getPlayerTimeOffset() {
+        return getPlayer().getPlayerTimeOffset();
+    }
+
+    @Override
+    public void setPlayerTime(long time, boolean relative) {
+        getPlayer().setPlayerTime(time, relative);
+    }
+
+    @Override
+    public void resetPlayerTime() {
+        getPlayer().resetPlayerTime();
+    }
+
+    @Override
     public String[] getGroups() {
-        return plugin.getGroups(player);
+        return plugin.getGroups(getPlayer());
     }
 
     @Override
     public void printRaw(String msg) {
         if (!silenced) {
-            player.sendMessage(msg);
+            getPlayer().sendMessage(msg);
         }
     }
 
     @Override
     public boolean hasPermission(String perm) {
-        return plugin.hasPermission(player, perm);
+        return plugin.hasPermission(getPlayer(), perm);
     }
-
-    public Player getPlayer() {
-        return player;
-    }
-
 }

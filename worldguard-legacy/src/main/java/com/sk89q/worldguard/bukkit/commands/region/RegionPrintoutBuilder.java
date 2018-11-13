@@ -20,22 +20,21 @@
 package com.sk89q.worldguard.bukkit.commands.region;
 
 import com.sk89q.squirrelid.cache.ProfileCache;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.domains.DefaultDomain;
-import com.sk89q.worldguard.protection.flags.DefaultFlag;
 import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.flags.RegionGroupFlag;
-import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.Callable;
+
+import javax.annotation.Nullable;
 
 /**
  * Create a region printout, as used in /region info to show information about
@@ -92,7 +91,7 @@ public class RegionPrintoutBuilder implements Callable<String> {
      */
     public void appendFlags() {
         builder.append(ChatColor.BLUE);
-        builder.append("Flags: ");
+        builder.append("FlagUtil: ");
         
         appendFlagsList(true);
         
@@ -100,14 +99,14 @@ public class RegionPrintoutBuilder implements Callable<String> {
     }
     
     /**
-     * Append just the list of flags (without "Flags:"), including colors.
+     * Append just the list of flags (without "FlagUtil:"), including colors.
      *
      * @param useColors true to use colors
      */
     public void appendFlagsList(boolean useColors) {
         boolean hasFlags = false;
         
-        for (Flag<?> flag : WorldGuardPlugin.inst().getFlagRegistry()) {
+        for (Flag<?> flag : WorldGuard.getInstance().getFlagRegistry()) {
             Object val = region.getFlag(flag), group = null;
             
             // No value
@@ -237,8 +236,8 @@ public class RegionPrintoutBuilder implements Callable<String> {
      * Add information about coordinates.
      */
     public void appendBounds() {
-        BlockVector min = region.getMinimumPoint();
-        BlockVector max = region.getMaximumPoint();
+        BlockVector3 min = region.getMinimumPoint();
+        BlockVector3 max = region.getMaximumPoint();
         builder.append(ChatColor.BLUE);
         builder.append("Bounds:");
         builder.append(ChatColor.YELLOW);
